@@ -1,99 +1,117 @@
+import React from 'react';
+import { SectionList, Text, View, StyleSheet, TextInput, useWindowDimensions } from 'react-native';
+import dados from './Data/dados';
 
-import { View, Text, SectionList, TextInput, StyleSheet, Dimensions } from 'react-native';
 
-const { width } = Dimensions.get('window'); 
+export default function App() {
 
-const DADOS_PRODUTOS = [
-  {title: 'Eletrônicos', data: ['Notebook', 'Smartphone', 'TV', 'Headphone', 'Smartwatch']},
-  {title: 'Roupas', data: ['Camiseta', 'Calça Jeans', 'Jaqueta de Couro', 'Meias']},
-  {title: 'Livros', data: ['Ficção Científica', 'Romance', 'Biografia', 'Didático']},
-];
-export default function CatalogoScreen() {
-  const [filtro, setFiltro] = useState('');
 
-  const dadosFiltrados = useMemo(() => {
-    if (!filtro) {
-      return DADOS_PRODUTOS; 
-    }
+ const { width, height } = useWindowDimensions()
 
-    const textoFiltro = filtro.toLowerCase();
 
-    return DADOS_PRODUTOS
-      .map(section => {
+ const [lista, setLista] = React.useState(() => dados)
+ const [filtro, setFiltro] = React.useState('')
 
-        const itensFiltrados = section.data.filter(item =>
-          item.toLowerCase().includes(textoFiltro)
-        );
 
-        return {
-          ...section,
-          data: itensFiltrados,
-        };
-      })
+ const handleFilter = React.useCallback((text) => {
+   setFiltro(text)
+   if (!text) {
+     setLista(dados)
+     return
+   }
+   const q = text.toLowerCase()
+   const filtered = dados
+     .map(section => {
+       const data = section.data.filter(item =>
+         item.nome.toLowerCase().includes(q)
+       )
+       return { ...section, data }
+     })
+     .filter(section => section.data.length > 0)
 
-      .filter(section => section.data.length > 0); 
-  }, [filtro]);
 
-  return (
-    <View style={styles.container}>
-      {/* Campo de Filtro (TextInput)  */}
-      <TextInput
-        style={styles.input}
-        placeholder="Buscar produto por nome..."
-        value={filtro}
-        onChangeText={setFiltro}
-      />
-      
-      {/* Lista Agrupada (SectionList)  */}
-      <SectionList
-        sections={dadosFiltrados}
-        keyExtractor={(item, index) => item + index}
-        renderItem={({ item }) => <Text style={styles.item}>{item}</Text>}
-        renderSectionHeader={({ section: { title } }) => (
-          <Text style={styles.header}>{title}</Text> // [cite: 84]
-        )}
-        ListEmptyComponent={() => (
-          <Text style={styles.vazio}>Nenhum produto encontrado.</Text>
-        )}
-      />
-    </View>
-  );
+   setLista(filtered)
+ }, [setFiltro, setLista])
+
+
+ const renderItem = React.useCallback(({ item }) => (
+   <Text style={styles.item}>
+     {item.nome} ({item.preco.toLocaleString('pt-BR', { style: "currency", currency: "BRL" })})
+   </Text>
+ ), [])
+
+
+ const renderSectionHeader = React.useCallback(({ section }) => (
+   <Text style={styles.header}>{section.categoria}</Text>
+ ), [])
+
+
+ const keyExtractor = React.useCallback((item) => item.id.toString(), [])
+
+
+ const containerStyle = React.useMemo(() => {
+   const isWide = width >= 600
+   return [
+     styles.container,
+     {
+       paddingHorizontal: isWide ? 24 : 12,
+       paddingTop: isWide ? 20 : 12,
+     }
+   ]
+ }, [width])
+
+
+ return (
+   <View style={containerStyle}>
+     <View style={styles.filter}>
+       <Text style={styles.label}>Filtrar:</Text>
+       <TextInput
+         style={styles.textInput}
+         value={filtro}
+         onChangeText={handleFilter}
+       />
+     </View>
+     <SectionList
+       sections={lista}
+       keyExtractor={keyExtractor}
+       renderItem={renderItem}
+       renderSectionHeader={renderSectionHeader}
+     />
+   </View>
+ );
 }
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    paddingTop: 40, 
-    paddingHorizontal: width * 0.03, 
-    backgroundColor: '#fff', 
-  },
-  input: {
-    borderWidth: 1, 
-    borderColor: '#ddd', 
-    padding: 10, 
-    marginBottom: 15, 
-    borderRadius: 8,
-    width: width * 0.94, 
-    alignSelf: 'center',
-    fontSize: 16,
-  },
-  header: {
-    fontSize: 20, // [cite: 93]
-    backgroundColor: '#eee', // [cite: 94]
-    padding: 8, // [cite: 95]
-    fontWeight: 'bold', // [cite: 96]
-    marginTop: 10,
-    borderRadius: 5,
-  },
-  item: {
-    padding: 10, // [cite: 98]
-    fontSize: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  vazio: {
-    textAlign: 'center',
-    marginTop: 50,
-    fontSize: 16,
-    color: 'gray',
-  }
+ container: {
+   flex: 1,
+   flexDirection: 'column'
+ },
+ filter: {
+   flexDirection: 'row',
+   backgroundColor: '#ccc',
+   padding: 15,
+   height: 64
+ },
+ label: {
+   marginBottom: 8,
+   marginTop: 8,
+   marginRight: 8,
+ },
+ textInput: {
+   borderWidth: 1,
+   borderColor: '#888',
+   marginBottom: 8,
+   marginTop: 8,
+   padding: 10,
+   borderRadius: 8,
+   backgroundColor: 'white'
+ },
+ header: {
+   fontSize: 20,
+   backgroundColor: '#eee',
+   padding: 8,
+   fontWeight: 'bold',
+ },
+ item: {
+   padding: 10,
+ },
 });
